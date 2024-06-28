@@ -1,0 +1,305 @@
+<html>
+
+<head>
+	<style>
+		@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+		body {
+			font-family: 'Inter', serif;
+		}
+		.hidden {
+			display: none;
+		}
+		.columns2 {
+			float: left;
+			width: 40%;
+			margin: 20px;
+		}
+
+		div.info, button {
+			margin-top: 15px;
+			margin-bottom: 15px;
+		}
+		.next {
+			background-color: lightgreen;
+		}
+	</style>
+	<title>Data Table Format Translator</title>
+	<link href="https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator.min.css" rel="stylesheet">
+	<script type="text/javascript" src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js"></script>
+</head>
+
+<body>
+
+	<div>
+		<div class="columns2">
+			
+			<a href="javascript:location.reload()">Reset</a>
+			<button onclick="loadTestData()" id="testDataButton">Show Example Data</button>
+			<div id="initialInstructions" class="info">
+				Click in the table below and <b>paste</b> your table from Excel / Google Sheets
+			</div>
+			
+			<div id="columnTypes" class="info"></div>			
+			<button onclick="buttonsConfirmed()" id="confirmColumnsButton" class="hidden">Confirm columns</button>
+			<button onclick="process()" id="processButton" class="hidden">Process into Excel friendly format</button>
+			<div id="tableInput"></div>			
+
+		</div>
+		<div class="columns2">
+			<div id="tableOutput"></div>
+			<button id="finalInstructions" onclick="copyToClipboard()" class="hidden info">
+				Click here to copy the table to your clipboard to be able to paste to Excel / Google Sheets
+			</button>			
+			<div id="finalInstructions2" class="hidden info next">
+				Your clipboard now holds the table and is ready to paste (ctr-v)
+			</div>
+		</div>	
+	</div>
+
+	<script>
+
+		let tableInput = undefined
+		let tableOutput = undefined
+
+		let columnNames
+		let tableColumns
+		let tableData
+
+		function loadTestData() {
+			let testData = [
+
+				{ col1: "date", col2: "category", col3: "region", col4: "amount" },
+
+				{ col1: "01/05/2023", col2: "Variable", col3: "Aus", col4: "1234.12" },
+				{ col1: "02/05/2023", col2: "Variable", col3: "Aus", col4: "2234.12" },
+				{ col1: "03/05/2023", col2: "Variable", col3: "Aus", col4: "3234.12" },
+				{ col1: "04/05/2023", col2: "Variable", col3: "Aus", col4: "934.12" },
+				{ col1: "01/05/2023", col2: "Variable", col3: "Jpn", col4: "1134.12" },
+				{ col1: "02/05/2023", col2: "Variable", col3: "Jpn", col4: "1834.12" },
+				{ col1: "03/05/2023", col2: "Variable", col3: "Jpn", col4: "2334.12" },
+				{ col1: "04/05/2023", col2: "Variable", col3: "Jpn", col4: "1934.12" },
+
+				{ col1: "01/05/2023", col2: "Fixed", col3: "Aus", col4: "1224.12" },
+				{ col1: "02/05/2023", col2: "Fixed", col3: "Aus", col4: "2274.12" },
+				{ col1: "03/05/2023", col2: "Fixed", col3: "Aus", col4: "3284.12" },
+				{ col1: "04/05/2023", col2: "Fixed", col3: "Aus", col4: "1234.12" },
+				{ col1: "01/05/2023", col2: "Fixed", col3: "Jpn", col4: "1124.12" },
+				{ col1: "02/05/2023", col2: "Fixed", col3: "Jpn", col4: "1864.12" },
+				{ col1: "03/05/2023", col2: "Fixed", col3: "Jpn", col4: "2534.12" },
+				{ col1: "04/05/2023", col2: "Fixed", col3: "Jpn", col4: "1734.12" },
+			]
+			tableInput.replaceData(testData)
+			refitTable()
+		}
+
+		function process() {
+			let columnForTime
+			let columnForMeasure
+			let columnsForDimensions = []
+
+			let outputColumnNames = ['Series']
+			let outputSeriesNames = []
+
+			columnNames.forEach(colName => {
+				let columnType = document.getElementById('col_' + colName).value
+				if (columnType == 'time') {
+					columnForTime = colName
+				}
+				else if (columnType == 'measure') {
+					columnForMeasure = colName
+				}
+				else if (columnType == 'dimension') {
+					columnsForDimensions.push(colName)
+				}
+			})
+
+			let dataByDate = {}
+			let dates = new Set()
+
+			tableData.forEach((row, idx) => {
+				let timeValue = row[columnForTime]
+				let measureValue = Number(row[columnForMeasure])
+				let isoDate = isoVersion(new Date(timeValue))
+				dates.add(isoDate)
+
+				let combinedDimensionName = ''
+				columnsForDimensions.forEach(dimensionColName => {
+					combinedDimensionName += row[dimensionColName] + '_'
+				})
+				combinedDimensionName = combinedDimensionName.slice(0, -1) // remove last _
+				
+				if (!outputSeriesNames.includes(combinedDimensionName)) {
+					outputSeriesNames.push(combinedDimensionName)
+				}
+
+				if (!dataByDate[isoDate]) {
+					dataByDate[isoDate] = {}
+				}
+				processRow(combinedDimensionName, measureValue, dataByDate, isoDate)
+			})
+
+			let dateArray = Array.from(dates)
+			dateArray.sort()
+			outputColumnNames = outputColumnNames.concat(dateArray)
+
+			let outputTableColumns = []
+			outputColumnNames.forEach(colName => {
+				outputTableColumns.push({ title: colName, field: colName, headerSort: false })
+			})
+
+			let outputTableData = []
+			outputSeriesNames.forEach(seriesName => {
+				let outputDataRow = {}
+				outputDataRow['Series'] = seriesName
+				dateArray.forEach(date => {
+					let dataValue = dataByDate[date][seriesName]
+					outputDataRow[date] = dataValue
+				})
+				outputTableData.push(outputDataRow)
+			})
+
+			tableOutput = new Tabulator("#tableOutput", {
+				data: outputTableData,
+				layout: "fitDataTable",
+				clipboard: true,
+				clipboardPasteAction: "replace",
+				columns: outputTableColumns,
+			})
+
+			tableOutput.on("clipboardCopied", copyDone)
+
+			let fi = document.getElementById('finalInstructions')
+			fi.classList.remove('hidden')
+			fi.classList.add('next')
+			let processButtonCl = document.getElementById('processButton').classList
+			processButtonCl.remove('next')
+		}
+
+		function copyDone() {
+			document.getElementById('finalInstructions').classList.remove('next')
+			document.getElementById('finalInstructions2').classList.remove('hidden')
+		}
+
+		function copyToClipboard() {
+			tableOutput.copyToClipboard("all")
+		}
+
+		function processRow(seriesName, valueForSeries, dataByDate, isoDate) {
+			if (!dataByDate[isoDate][seriesName]) {
+				dataByDate[isoDate][seriesName] = 0
+			}
+			dataByDate[isoDate][seriesName] = dataByDate[isoDate][seriesName] + valueForSeries
+		}
+
+		function isoVersion(d) {
+			return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())
+		}
+
+		function pad(num) {
+			return (num < 10 ? '0' : '') + num;
+		}
+
+		function refitTable() {
+			let initialData = tableInput.getData()
+
+			columnNames = []
+			tableColumns = []
+			tableData = []
+
+			let intArray = Array.from(Array(10).keys()) 	//  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] 
+			intArray = intArray.map(i => i + 1) 						//  [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] 
+
+			let columnTypeHolder = document.getElementById('columnTypes')
+			let indexColumnNameMapping = {}
+
+			initialData.forEach((row, idx) => {
+				if (idx == 0) { // use 1st row for headers
+					intArray.forEach(colIdx => {
+						let colValue = eval('row.col' + colIdx)
+						if (colValue) {
+							tableColumns.push({ title: colValue, field: colValue, headerSort: false })
+							indexColumnNameMapping[colIdx] = colValue
+							columnNames.push(colValue)
+
+							let timeDefault = colValue.toLowerCase().includes('date') 			// if the column name includes the word date we will set this as default for time column
+							let measureDefault = colValue.toLowerCase().includes('amount')	// if the column name includes the word amount we will set this as default for measure column
+							let dimensionDefault = !timeDefault && !measureDefault
+
+							let selectHolder = document.createElement("span")
+							columnTypeHolder.appendChild(document.createTextNode(' ' + colValue + ' '))
+							columnTypeHolder.appendChild(selectHolder)
+
+							let selectList = document.createElement("select")
+							selectList.id = "col_" + colValue;
+							selectHolder.appendChild(selectList);
+							selectList.add(new Option('time', 'time', timeDefault, timeDefault))
+							selectList.add(new Option('dimension', 'dimension', dimensionDefault, dimensionDefault))
+							selectList.add(new Option('measure', 'measure', measureDefault, measureDefault))
+							selectList.add(new Option('ignore'))
+						}
+					})
+				} else { // data
+					let rowData = {}
+					intArray.forEach(colIdx => {
+						let colValue = eval('row.col' + colIdx)
+						let colName = indexColumnNameMapping[colIdx]
+						if (colValue) {
+							rowData[colName] = colValue
+						}
+					})
+					tableData.push(rowData)
+				}
+			})
+
+			tableInput.setColumns(tableColumns) 
+			tableInput.replaceData(tableData)
+
+			let confirmButtonCl = document.getElementById('confirmColumnsButton').classList
+			confirmButtonCl.remove('hidden')
+			confirmButtonCl.add('next')
+			document.getElementById('initialInstructions').classList.add('hidden')
+			document.getElementById('testDataButton').classList.add('hidden')
+		}
+
+		function buttonsConfirmed() {
+			let confirmButtonCl = document.getElementById('confirmColumnsButton').classList
+			confirmButtonCl.remove('next')
+
+			let processButtonCl = document.getElementById('processButton').classList
+			processButtonCl.remove('hidden')
+			processButtonCl.add('next')
+		}
+
+		function initTable() {
+			tableData = []
+			tableData.push({})
+			tableData.push({})
+			tableData.push({})
+
+			let colWidth = ""
+			
+			tableInput = new Tabulator("#tableInput", {
+				data: tableData,
+				layout: "fitColumns",
+				clipboard: true,
+				clipboardPasteAction: "replace",
+				columns: [
+					{ title: "", field: "col1", headerSort: false},
+					{ title: "", field: "col2", headerSort: false, width: colWidth },
+					{ title: "", field: "col3", headerSort: false, width: colWidth },
+					{ title: "", field: "col4", headerSort: false, width: colWidth },
+					{ title: "", field: "col5", headerSort: false, width: colWidth },
+					{ title: "", field: "col6", headerSort: false, width: colWidth },
+					{ title: "", field: "col7", headerSort: false, width: colWidth },
+					{ title: "", field: "col8", headerSort: false, width: colWidth },
+					{ title: "", field: "col9", headerSort: false, width: colWidth },
+				],
+			})
+			tableInput.on("clipboardPasted", refitTable)
+		}
+
+		initTable()
+	</script>
+
+</body>
+<html>
