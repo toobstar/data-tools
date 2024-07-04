@@ -13,20 +13,39 @@
 		.columns2 {
 			float: left;
 			width: 40%;
-			margin: 20px;
+			margin: 10px;
 		}
 
 		div.info, button {
 			margin-top: 15px;
 			margin-bottom: 15px;
 		}
+		.info {
+			background-color: lightgray;
+			padding: 10px;
+			border-radius: 5px;
+		}
 		.next {
-			background-color: lightgreen;
+			background-color: lightgreen ;
+		}
+		h2 {
+			margin-block-start: 0.2em;
+		}
+		.spaceAfter {
+			margin-bottom: 10px;
+		}
+		.error {
+			background-color: lightcoral;
+			padding: 2px;
 		}
 	</style>
 	<title>Data Table Format Translator</title>
 	<link href="https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator.min.css" rel="stylesheet">
 	<script type="text/javascript" src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js"></script>
+
+	<script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.11/plugin/customParseFormat.min.js"></script>	
+	<script>dayjs.extend(window.dayjs_plugin_customParseFormat)</script>
 </head>
 
 <body>
@@ -34,15 +53,33 @@
 	<div>
 		<div class="columns2">
 			
-			<a href="javascript:location.reload()">Reset</a>
-			<button onclick="loadTestData()" id="testDataButton">Show Example Data</button>
+			<div class="info">
+				<h2>Data Transformer</h2>
+				<div>
+					Transform data from a structure preferred by data analysis tools (like PowerBI, Looker Studio, Tableau etc)
+					into a structure that is easier to work with in spreadsheets (like Excel, Google Sheets etc).
+					<br/><br/>
+					Data analysis 
+					<a target="_blank" href="https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/">typically uses a 
+					modelling approach where columns represent dimensions and measures.</a>
+					A dimension is an attribute of an event in the table such as a location or some other descriptive identifier.
+					A measure is the numeric value (fact) of the event that we will be performing a mathematical calculation on (e.g. summing).					
+				</div>
+			</div>
+
+			<a href="javascript:location.reload()" id="resetButton" class="hidden">Reset</a>
+			<button onclick="loadTestData()" id="testDataButton">Demonstrate with example data</button>
 			<div id="initialInstructions" class="info">
-				Click in the table below and <b>paste</b> your table from Excel / Google Sheets
+				Click in the table below and <b>paste</b> your table from Excel / Google Sheets				
 			</div>
 			
-			<div id="columnTypes" class="info"></div>			
-			<button onclick="buttonsConfirmed()" id="confirmColumnsButton" class="hidden">Confirm columns</button>
+			<div id="columnTypes" class="info hidden"></div>						
+			<button onclick="buttonsConfirmed()" id="confirmColumnsButton" class="hidden">Confirm column mappings</button>						
+			<div class="hidden" id="dateFormatMsg" >
+				Using data format <input type="text" id="dateFormat" value="DD/MM/YYYY"></input>
+			</div>
 			<button onclick="process()" id="processButton" class="hidden">Process into Excel friendly format</button>
+			<br/>
 			<div id="tableInput"></div>			
 
 		</div>
@@ -64,36 +101,50 @@
 
 		let columnNames
 		let tableColumns
-		let tableData
+		let tableData		
 
 		function loadTestData() {
 			let testData = [
 
-				{ col1: "date", col2: "category", col3: "region", col4: "amount" },
+				{ col1: "date", col2: "category", col3: "size", col4: "amount" },
 
-				{ col1: "01/05/2023", col2: "Variable", col3: "Aus", col4: "1234.12" },
-				{ col1: "02/05/2023", col2: "Variable", col3: "Aus", col4: "2234.12" },
-				{ col1: "03/05/2023", col2: "Variable", col3: "Aus", col4: "3234.12" },
-				{ col1: "04/05/2023", col2: "Variable", col3: "Aus", col4: "934.12" },
-				{ col1: "01/05/2023", col2: "Variable", col3: "Jpn", col4: "1134.12" },
-				{ col1: "02/05/2023", col2: "Variable", col3: "Jpn", col4: "1834.12" },
-				{ col1: "03/05/2023", col2: "Variable", col3: "Jpn", col4: "2334.12" },
-				{ col1: "04/05/2023", col2: "Variable", col3: "Jpn", col4: "1934.12" },
+				{ col1: "01/05/2023", col2: "widget", col3: "Large", col4: "123.00" },
+				{ col1: "05/05/2023", col2: "widget", col3: "Large", col4: "121.78" },
+				{ col1: "10/05/2023", col2: "widget", col3: "Large", col4: "87.56" },
+				{ col1: "15/05/2023", col2: "widget", col3: "Large", col4: "99.11" },
+				{ col1: "25/05/2023", col2: "widget", col3: "Large", col4: "100.12" },
+				{ col1: "30/05/2023", col2: "widget", col3: "Large", col4: "134.09" },
 
-				{ col1: "01/05/2023", col2: "Fixed", col3: "Aus", col4: "1224.12" },
-				{ col1: "02/05/2023", col2: "Fixed", col3: "Aus", col4: "2274.12" },
-				{ col1: "03/05/2023", col2: "Fixed", col3: "Aus", col4: "3284.12" },
-				{ col1: "04/05/2023", col2: "Fixed", col3: "Aus", col4: "1234.12" },
-				{ col1: "01/05/2023", col2: "Fixed", col3: "Jpn", col4: "1124.12" },
-				{ col1: "02/05/2023", col2: "Fixed", col3: "Jpn", col4: "1864.12" },
-				{ col1: "03/05/2023", col2: "Fixed", col3: "Jpn", col4: "2534.12" },
-				{ col1: "04/05/2023", col2: "Fixed", col3: "Jpn", col4: "1734.12" },
+				{ col1: "01/05/2023", col2: "widget", col3: "Small", col4: "83.10" },
+				{ col1: "05/05/2023", col2: "widget", col3: "Small", col4: "45.38" },
+				{ col1: "10/05/2023", col2: "widget", col3: "Small", col4: "77.16" },
+				{ col1: "15/05/2023", col2: "widget", col3: "Small", col4: "65.11" },
+				{ col1: "25/05/2023", col2: "widget", col3: "Small", col4: "92.45" },
+				{ col1: "30/05/2023", col2: "widget", col3: "Small", col4: "84.91" },
+
+				{ col1: "01/05/2023", col2: "grommet", col3: "Large", col4: "225.00" },
+				{ col1: "05/05/2023", col2: "grommet", col3: "Large", col4: "311.78" },
+				{ col1: "10/05/2023", col2: "grommet", col3: "Large", col4: "167.56" },
+				{ col1: "15/05/2023", col2: "grommet", col3: "Large", col4: "199.41" },
+				{ col1: "25/05/2023", col2: "grommet", col3: "Large", col4: "300.12" },
+				{ col1: "30/05/2023", col2: "grommet", col3: "Large", col4: "264.09" },
+
+				{ col1: "01/05/2023", col2: "grommet", col3: "Small", col4: "183.10" },
+				{ col1: "05/05/2023", col2: "grommet", col3: "Small", col4: "245.38" },
+				{ col1: "10/05/2023", col2: "grommet", col3: "Small", col4: "171.16" },
+				{ col1: "15/05/2023", col2: "grommet", col3: "Small", col4: "161.11" },
+				{ col1: "25/05/2023", col2: "grommet", col3: "Small", col4: "192.45" },
+				{ col1: "30/05/2023", col2: "grommet", col3: "Small", col4: "184.21" },
 			]
 			tableInput.replaceData(testData)
 			refitTable()
 		}
 
+
+
 		function process() {
+			window.scrollTo({ top: 0, behavior: 'smooth' })
+
 			let columnForTime
 			let columnForMeasure
 			let columnsForDimensions = []
@@ -117,10 +168,14 @@
 			let dataByDate = {}
 			let dates = new Set()
 
+			let df = document.getElementById('dateFormat').value
+			console.log('df', df)			
+
 			tableData.forEach((row, idx) => {
 				let timeValue = row[columnForTime]
 				let measureValue = Number(row[columnForMeasure])
-				let isoDate = isoVersion(new Date(timeValue))
+
+				let isoDate = dayjs(timeValue, df).format('YYYY-MM-DD')
 				dates.add(isoDate)
 
 				let combinedDimensionName = ''
@@ -192,14 +247,6 @@
 			dataByDate[isoDate][seriesName] = dataByDate[isoDate][seriesName] + valueForSeries
 		}
 
-		function isoVersion(d) {
-			return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())
-		}
-
-		function pad(num) {
-			return (num < 10 ? '0' : '') + num;
-		}
-
 		function refitTable() {
 			let initialData = tableInput.getData()
 
@@ -211,6 +258,11 @@
 			intArray = intArray.map(i => i + 1) 						//  [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] 
 
 			let columnTypeHolder = document.getElementById('columnTypes')
+			columnTypeHolder.classList.remove('hidden')
+			let ctInfo = document.createElement('div')
+			ctInfo.classList.add('spaceAfter')
+			ctInfo.appendChild(document.createTextNode('Columns identified:'))
+			columnTypeHolder.appendChild(ctInfo)
 			let indexColumnNameMapping = {}
 
 			initialData.forEach((row, idx) => {
@@ -226,17 +278,18 @@
 							let measureDefault = colValue.toLowerCase().includes('amount')	// if the column name includes the word amount we will set this as default for measure column
 							let dimensionDefault = !timeDefault && !measureDefault
 
-							let selectHolder = document.createElement("span")
-							columnTypeHolder.appendChild(document.createTextNode(' ' + colValue + ' '))
+							let selectHolder = document.createElement("div")
 							columnTypeHolder.appendChild(selectHolder)
 
 							let selectList = document.createElement("select")
 							selectList.id = "col_" + colValue;
-							selectHolder.appendChild(selectList);
+							
 							selectList.add(new Option('time', 'time', timeDefault, timeDefault))
 							selectList.add(new Option('dimension', 'dimension', dimensionDefault, dimensionDefault))
 							selectList.add(new Option('measure', 'measure', measureDefault, measureDefault))
 							selectList.add(new Option('ignore'))
+							selectHolder.appendChild(document.createTextNode(' \u3164 ' + colValue + ' '))
+							selectHolder.appendChild(selectList)
 						}
 					})
 				} else { // data
@@ -255,6 +308,9 @@
 			tableInput.setColumns(tableColumns) 
 			tableInput.replaceData(tableData)
 
+			
+			document.getElementById('resetButton').classList.remove('hidden')
+
 			let confirmButtonCl = document.getElementById('confirmColumnsButton').classList
 			confirmButtonCl.remove('hidden')
 			confirmButtonCl.add('next')
@@ -263,12 +319,55 @@
 		}
 
 		function buttonsConfirmed() {
+
+			let columnForTime
+			let columnForMeasure
+			let errorMsg = ''
+
+			for (let obj of columnNames) {
+				let columnType = document.getElementById('col_' + obj).value
+				if (columnType == 'time') {
+					if (columnForTime) {
+						errorMsg = 'Time column should only be set once'
+					} 					
+					columnForTime = obj
+				}
+				else if (columnType == 'measure') {
+					if (columnForMeasure) {
+						errorMsg = 'Measure column should only be set once'
+					}
+					columnForMeasure = obj
+				}				
+			}
+			
+			let emp = document.getElementById('errorMsgPanel')			
+			if (errorMsg) {
+				if (!emp) {
+					emp = document.createElement("div")
+					emp.id = 'errorMsgPanel'
+					emp.classList.add('error')
+					let columnTypeHolder = document.getElementById('columnTypes')
+					columnTypeHolder.appendChild(emp)
+				}
+				emp.innerText = errorMsg
+				return
+			} else {
+				if (emp) {
+					emp.remove()
+				}
+			}
+
+
 			let confirmButtonCl = document.getElementById('confirmColumnsButton').classList
 			confirmButtonCl.remove('next')
 
 			let processButtonCl = document.getElementById('processButton').classList
 			processButtonCl.remove('hidden')
 			processButtonCl.add('next')
+
+			let dateFormatInput = document.getElementById('dateFormatMsg').classList
+			dateFormatInput.remove('hidden')
+			
 		}
 
 		function initTable() {
