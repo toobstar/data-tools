@@ -62,14 +62,16 @@
 					Data analysis 
 					<a target="_blank" href="https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/">typically uses a 
 					modelling approach where columns represent dimensions and measures.</a>
-					A dimension is an attribute of an event in the table such as a location or some other descriptive identifier.
-					A measure is the numeric value (fact) of the event that we will be performing a mathematical calculation on (e.g. summing).					
+					A <b>dimension</b> is an attribute of an event in the table such as a location or some other descriptive identifier.
+					In this transformation the dimensions are used to construct the series names.
+					A <b>measure</b> is the numeric value (fact) of the event that we will be performing a mathematical calculation on (e.g. summing).					
 				</div>
 			</div>
 
 			<a href="javascript:location.reload()" id="resetButton" class="hidden">Reset</a>
 			<button onclick="loadTestData()" id="testDataButton">Demonstrate with example data</button>
-			<div id="initialInstructions" class="info">
+			<button onclick="showInitial()" id="getStartedBtn" class="next">Get Started</button>
+			<div id="initialInstructions" class="info hidden next">
 				Click in the table below and <b>paste</b> your table from Excel / Google Sheets				
 			</div>
 			
@@ -103,7 +105,14 @@
 		let tableColumns
 		let tableData		
 
+		function showInitial() {
+			document.getElementById('initialInstructions').classList.remove('hidden')
+			document.getElementById('getStartedBtn').classList.add('hidden')
+			document.getElementById('testDataButton').classList.add('hidden')
+		}
+
 		function loadTestData() {
+			document.getElementById('getStartedBtn').classList.add('hidden')
 			let testData = [
 
 				{ col1: "date", col2: "category", col3: "size", col4: "amount" },
