@@ -80,6 +80,8 @@
 					<br/><br/>
 					In this transformation the dimensions are used to construct the series names which become permutations of each combination of dimension.
 					You can copy this into a spreadsheet, highlight the cells and the auto-chart workflow should work easily enough. 
+					<br/><br/>
+					<b>Note: your data is private.  Nothing will leave this browser</b>
 				</div>
 			</div>
 
@@ -121,6 +123,7 @@
 		let tableData		
 
 		function showInitial() {
+			document.getElementById('resetButton').classList.remove('hidden')
 			document.getElementById('initialInstructions').classList.remove('hidden')
 			document.getElementById('getStartedBtn').classList.add('hidden')
 			document.getElementById('testDataButton').classList.add('hidden')
