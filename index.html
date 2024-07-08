@@ -1,7 +1,7 @@
 <html>
 
 <head>
-	<link rel="shortcut icon" type="image/x-icon" href="favicon.ico?">
+	<link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
 	<style>
 		@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
 		body {
@@ -48,6 +48,15 @@
 	<script>dayjs.extend(window.dayjs_plugin_customParseFormat)</script>
 </head>
 
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XT34VPFPB5"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-XT34VPFPB5');
+</script>
+
 <body>
 
 	<div>
@@ -56,15 +65,21 @@
 			<div class="info">
 				<h2>Data Transformer</h2>
 				<div>
-					Transform data from a structure preferred by data analysis tools (like PowerBI, Looker Studio, Tableau etc)
+					Transform a structure preferred by data analysis tools (like PowerBI, Looker Studio, Tableau etc)
 					into a structure that is easier to work with in spreadsheets (like Excel, Google Sheets etc).
 					<br/><br/>
 					Data analysis 
 					<a target="_blank" href="https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/">typically uses a 
-					modelling approach where columns represent dimensions and measures.</a>
+					modelling approach where columns represent dimensions and measures and rows are instances.</a>
 					A <b>dimension</b> is an attribute of an event in the table such as a location or some other descriptive identifier.
-					In this transformation the dimensions are used to construct the series names.
-					A <b>measure</b> is the numeric value (fact) of the event that we will be performing a mathematical calculation on (e.g. summing).					
+					A <b>measure</b> is the numeric value (fact) of the event that we will be performing a mathematical calculation on (e.g. summing).		
+					<br/><br/>
+					In traditional spreadsheets this sort of modelling is harder to lay out.  Typically for a spreadsheet you have a column for 
+					one of the x and y axis, and a a column per series for the alternate axis.  The possibility to have descriptive or shared data
+					between series is harder to achieve.  
+					<br/><br/>
+					In this transformation the dimensions are used to construct the series names which become permutations of each combination of dimension.
+					You can copy this into a spreadsheet, highlight the cells and the auto-chart workflow should work easily enough. 
 				</div>
 			</div>
 
