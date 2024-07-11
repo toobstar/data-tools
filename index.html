@@ -201,8 +201,12 @@
 
 			tableData.forEach((row, idx) => {
 				let timeValue = row[columnForTime]
-				let measureValue = Number(row[columnForMeasure])
 
+				let measureText = row[columnForMeasure]
+				measureText = measureText.replaceAll('$', '')
+				measureText = measureText.replaceAll(',', '')
+				let measureValue = Number(measureText)
+				
 				let isoDate = dayjs(timeValue, df).format('YYYY-MM-DD')
 				dates.add(isoDate)
 
